@@ -1,5 +1,6 @@
 import pandas as pd
 import requests
+import json
 
 # importing initial data, extracting relevant columns and sorting context alphabetically to group by context
 df = pd.read_csv('new_data.csv')
@@ -26,20 +27,39 @@ for index, row in dfAlphabetical.iterrows():
                 
                 # retain the shorter phrase in case of overlap
                 if len(row['phrase']) < len(prevRow['phrase']):
-                    indicesDrop.append(prevRow.name)
-                else:
                     indicesDrop.append(row.name)
+                else:
+                    indicesDrop.append(prevRow.name)
 
 # dropping identified overlapping indices
 uniqDrop = list(set(indicesDrop))
 dfAlphabetical = dfAlphabetical.drop(uniqDrop).reset_index(drop=True)
 dfAlphabetical = dfAlphabetical.drop(0).reset_index(drop=True)
-        
-# downloading sorted dataset
-dataSorted = dfAlphabetical.to_csv()
-with open('data1.csv', 'w') as f:
-    f.write(dataSorted)
-url = 'http://example.com/data.csv'  
-response = requests.get(url)
-with open('downloaded_data.csv', 'wb') as f:
-    f.write(response.content)
+
+# grouping by context
+grouped = dfAlphabetical.groupby('context').agg({
+    'type': lambda x: list(x),
+    'start_index': lambda x: list(x),
+    'end_index': lambda x: list(x),
+    'phrase': lambda x: list(x)
+}).reset_index()
+
+# create JSON objects
+jsonList = []
+for index, row in grouped.iterrows():
+    context = row['context']
+    entities = list(zip(row['type'], row['start_index'], row['end_index']))
+    phrases = row['phrase']
+    jsonObj = {
+        "context": context,
+        "entities": entities,
+        "phrase": phrases
+    }
+    jsonList.append(jsonObj)
+
+# Convert the list of JSON objects to a JSON string
+jsonOutput = json.dumps(jsonList, indent=4)
+
+# Write the JSON string to a file
+with open('output.json', 'w') as f:
+    f.write(jsonOutput)
