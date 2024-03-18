@@ -57,9 +57,9 @@ for index, row in grouped.iterrows():
     }
     jsonList.append(jsonObj)
 
-# Convert the list of JSON objects to a JSON string
+# convert to JSON string
 jsonOutput = json.dumps(jsonList, indent=4)
 
-# Write the JSON string to a file
+# write to file
 with open('output.json', 'w') as f:
     f.write(jsonOutput)
